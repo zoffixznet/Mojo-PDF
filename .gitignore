@@ -1,2 +1,7 @@
 Mojo-PDF-*
 .build
+tmp
+_template.pdf
+error.log
+myawesome.pdf
+Reuse.pm
