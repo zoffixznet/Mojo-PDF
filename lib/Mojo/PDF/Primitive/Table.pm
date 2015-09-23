@@ -147,6 +147,8 @@ __END__
 
 =for stopwords Znet Zoffix
 
+=for Pod::Coverage *EVERYTHING*
+
 =head1 NAME
 
 Mojo::PDF::Primitive::Table - table primitive for Mojo::PDF
@@ -155,5 +157,5 @@ Mojo::PDF::Primitive::Table - table primitive for Mojo::PDF
 
 Class implementing a table primitive. See L<Mojo::PDF/"table">
 
-=end
+=cut
 

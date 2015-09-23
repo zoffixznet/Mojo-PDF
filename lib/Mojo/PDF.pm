@@ -207,7 +207,7 @@ __END__
 
 =encoding utf8
 
-=for stopwords Znet Zoffix
+=for stopwords Znet Zoffix Mojotastic PDFs RGB TTF
 
 =head1 NAME
 
