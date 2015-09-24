@@ -242,10 +242,10 @@ Mojo::PDF - Generate PDFs with the goodness of Mojo!
         # Render a table
         ->font('galaxie_it')->size(8)->color
         ->table(
-            at     => [20.4, 268],
-            width  => 571.2,
-            border => [.5, '#CFE3EF'],
-            data   => [
+            at        => [20.4, 268],
+            min_width => 571.2,
+            border    => [.5, '#CFE3EF'],
+            data      => [
                 [ qw{Product  Description Qty  Price  U/M} ],
                 @$data,
             ],
@@ -293,15 +293,15 @@ C<Mojo::PDF> object to create more than one PDF.
     );
 
 Adds TTF fonts to the document. Key/value pairs specify the arbitrary name
-of the font (for use with L<font> and the path to the TTF file.
+of the font (for you to use with L</font>) and the path to the TTF file.
 
-You cannot use any of the names of the L<DEFAULT FONTS> for your fonts.
+You cannot use any of the names of the L</DEFAULT FONTS> for your custom fonts.
 
 =head2 C<color>
 
     $pdf->color(.5, .5, .3);
     $pdf->color('#abcdef');
-    $pdf->color('#ccc');   # same as #cccccc
+    $pdf->color('#abc');   # same as #aabbcc
     $pdf->color;           # same as #000
 
 Specifies active color. Takes either an RGB tuple or a hex colour. Defaults
@@ -313,8 +313,8 @@ to black.
 
     $pdf->font('galaxie');
 
-Sets active font family. Takes the name of either one of the L<DEFAULT FONTS>
-or one of the custom fonts included with L<add_fonts>
+Sets active font family. Takes the name of either one of the L</DEFAULT FONTS>
+or one of the custom fonts included with L</add_fonts>
 
 =head2 C<mixin>
 
@@ -322,16 +322,17 @@ or one of the custom fonts included with L<add_fonts>
 
     $pdf->mixin('template.pdf', 3);
 
-Adds a page from an existing PDF to your currently active page. Takes one
-mandatory argument, the filename of the PDF to include. An optional argument
-specifies the page number to include (starting from 1), which defaults to
-the first page.
+Adds a page from an existing PDF to your currently active page, so you
+can use it as a template and render additional things on it. Takes one
+mandatory argument, the filename of the PDF to include. An optional second
+argument specifies the page number to include (starting from 1),
+which defaults to the first page.
 
 =head2 C<page>
 
     $p->page;
 
-Add a new blank page to your document.
+Add a new blank page to your document and sets it as the currently active page.
 
 =head2 C<size>
 
@@ -339,21 +340,21 @@ Add a new blank page to your document.
 
     $pdf->size; # set to 12
 
-Specifies active font size in points. Defaults to 12 points.
+Specifies active font size in points. Defaults to C<12> points.
 
 =head2 C<table>
 
     $t->table(
-        at     => [20.4, 268],
-        width  => 571.2,
-        border => [.5, '#CFE3EF'],
-        data   => [
+        at        => [20.4, 268],
+        min_width => 571.2,
+        border    => [.5, '#CFE3EF'],
+        data      => [
             [ qw{Product  Description Qty  Price  U/M} ],
             @$data,
         ],
 
         #Optional:
-        row_height => 24,
+        row_height     => 24,
         str_width_mult => 1.1,
     );
 
@@ -365,7 +366,7 @@ Render a table on the current page. Takes these arguments:
 
 An arrayref with X and Y point values of the table's top, left corner.
 
-=head3 C<width>
+=head3 C<min_width>
 
     min_width => 571.2,
 
@@ -377,11 +378,11 @@ to make the table at least this wide.
     border => [.5, '#CFE3EF'],
 
 Takes an arrayref with the width (in points) and colour of the table's borders.
-Color allows the same values as L<color> method.
+Color allows the same values as L</color> method.
 
 =head3 C<data>
 
-    data   => [
+    data => [
         [ qw{Product  Description Qty  Price  U/M} ],
         @$data,
     ],
@@ -394,7 +395,7 @@ table cell values.
     row_height => 24,
 
 B<Optional>. Specifies the height of a row, in points. Defaults to
-1.4 times the current font size.
+1.4 times the current L<font size|/size>.
 
 =head3 C<str_width_mult>
 
@@ -413,14 +414,15 @@ detected character width.
     $p->text('Lorem ipsum dolor sit amet, ', 20 );
     $p->text('consectetur adipiscing elit!');
 
-Render text with the currently active L<font>, L<size>, and L<color>.
+Render text with the currently active L</font>, L</size>, and L</color>.
 C<$alignment> specifies how to align the string horizontally on the C<$x>
 point; valid values are C<left> (default), C<center>, and C<right>.
 C<$rotation> is the rotation of the text in degrees.
 
-Subsequent calls to L<text> can omit C<$x> and C<$y> values with these effects:
-omit both to continue rendering where previous L<text> finished; omit just
-C<$y>, to render on the next line from previous call to L<text>.
+Subsequent calls to C<text> can omit C<$x> and C<$y> values with
+these effects: omit both to continue rendering where previous C<text>
+finished; omit just C<$y>, to render on the next line from previous call
+to C<text>.
 
 =head1 DEFAULT FONTS
 
@@ -444,7 +446,7 @@ These fonts are available by default:
     Symbol
     ZapfDingbats
 
-You can use their abbreviate names:
+You can use their abbreviated names:
 
     TR
     TB
