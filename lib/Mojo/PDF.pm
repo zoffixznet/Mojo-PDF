@@ -138,8 +138,7 @@ sub table {
 
     my $t = Mojo::PDF::Primitive::Table->new(
         pdf => $self,
-        map +( $conf{$_} ? ( $_ => $conf{$_} ) : () ),
-            qw/data  min_width  at  border  row_height  str_width_mult/,
+        %conf,
     );
 
     $t->draw;
@@ -353,6 +352,7 @@ Specifies active font size in points. Defaults to C<12> points.
 
         #Optional:
         border         => [.5, '#CFE3EF'],
+        header         => 'galaxie_bold',
         min_width      => 571.2,
         row_height     => 24,
         str_width_mult => 1.1,
@@ -374,7 +374,7 @@ An arrayref with X and Y point values of the table's top, left corner.
     ],
 
 An arrayref of rows, each of which is an arrayref of strings representing
-table cell values.
+table cell values. Setting L</headers> will render first row as a table header.
 
 =head3 C<border>
 
@@ -383,6 +383,14 @@ table cell values.
 B<Optional>. Takes an arrayref with the width (in points) and colour of
 the table's borders. Color allows the same values as L</color> method.
 B<Defaults to:> C<[.5, '#ccc']>
+
+=head3 C<header>
+
+    header => 'galaxie_bold',
+
+B<Optional>. Takes the same value as L</font>. If set, the first row
+of C</data> will be used as table header, rendered centered using
+C<header> font. B<Not set by default.>
 
 =head3 C<min_width>
 

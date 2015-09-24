@@ -3,7 +3,7 @@ package Mojo::PDF::Primitive::Table;
 # VERSION
 
 use List::AllUtils qw/sum/;
-use Types::Standard qw/ArrayRef  Tuple  InstanceOf  StrictNum/;
+use Types::Standard qw/ArrayRef  Tuple  InstanceOf  StrictNum  Str/;
 use Types::Common::Numeric qw/PositiveInt  PositiveOrZeroNum  PositiveNum/;
 use Moo 2.000002;
 use namespace::clean;
@@ -23,6 +23,7 @@ has pdf            => ( is => 'ro',   required => 1,
 has min_width      => ( is => 'ro',   default  => 0,  isa =>PositiveOrZeroNum);
 has row_height     => ( is => 'ro',   default  => 12, isa => PositiveNum,    );
 has str_width_mult => ( is => 'ro',   default  => 1,  isa => StrictNum       );
+has header         => ( is => 'ro',   default  => 0,  isa => Str             );
 has border         => ( is => 'ro',   default  => sub { [.5, '#ccc'] },
     isa => ArrayRef,
 );
@@ -120,9 +121,9 @@ sub _draw_cell {
     $pdf->color( @$saved_color );
 
     # Render table header
-    if ( $r_num == 1 and $pdf->_fonts->{$pdf->_cur_font . '_bold'} ) {
+    if ( $r_num == 1 and $self->header ) {
         my $saved_font = $pdf->_cur_font;
-        $pdf->font( $pdf->_cur_font . '_bold' );
+        $pdf->font( $self->header );
         $pdf->text(
             $text,
             $x1 + ( .5*$self->_col_widths->[$c_num-1] ),
