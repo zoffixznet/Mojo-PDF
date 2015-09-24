@@ -143,7 +143,8 @@ sub table {
         %conf,
     );
 
-    $t->draw;
+    my @overflow = $t->draw;
+    return \@overflow if $conf{max_height};
 
     $self;
 }
@@ -171,7 +172,10 @@ sub text {
 }
 
 sub page {
+    my $self = shift;
     prPage;
+
+    $self;
 }
 
 sub end {
@@ -331,7 +335,7 @@ which defaults to the first page.
 
 =head2 C<page>
 
-    $p->page;
+    $pdf->page;
 
 Add a new blank page to your document and sets it as the currently active page.
 
@@ -345,7 +349,7 @@ Specifies active font size in points. Defaults to C<12> points.
 
 =head2 C<table>
 
-    $t->table(
+    $pdf->table(
         at        => [20.4, 268],
         data      => [
             [ qw{Product  Description Qty  Price  U/M} ],
@@ -355,6 +359,7 @@ Specifies active font size in points. Defaults to C<12> points.
         #Optional:
         border         => [.5, '#CFE3EF'],
         header         => 'galaxie_bold',
+        max_height     => 744,
         min_width      => 571.2,
         row_height     => 24,
         str_width_mult => 1.1,
@@ -394,6 +399,23 @@ B<Defaults to:> C<[.5, '#ccc']>
 B<Optional>. Takes the same value as L</font>. If set, the first row
 of C</data> will be used as table header, rendered centered using
 C<header> font. B<Not set by default.>
+
+=head3 C<max_height>
+
+    {
+        $data = $pdf->table(
+            max_height => 744,
+            data       => $data,
+            at         => [20.4, 50],
+        );
+
+        @$data and $pdf->page and redo;
+    }
+
+B<Optional>. B<ALTERS RETURN VALUE OF C<table> METHOD>. Specifies the maximum
+height of the table. Specifying this option makes C<table> method return
+an arrayref of rows that did not fit into the table. You can use that to
+add a new page and continue rendering the overflown data.
 
 =head3 C<min_width>
 

@@ -2,11 +2,12 @@ Revision history for Mojo-PDF
 
 1.002001  2015-09-24
     [Table primitive]
-        - Added header option
+        - Added 'header' and 'max_height' options
         - Blank cells are no longer drawn
-        - min_width and border are now optional
-        - Fixed bug where border failed to accept RGB tuples
+        - 'min_width' and 'border' are now optional
+        - Fixed bug where 'border' failed to accept RGB tuples
     [Misc]
+        - "page" now correctly returns its invocant
         - Fixed unwanted warnings when outputting falsy strings
         - Documentation corrections and clarifications (#1, #2, #3, #4, #5)
 

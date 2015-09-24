@@ -22,6 +22,9 @@ has pdf            => ( is => 'ro',   required => 1,
 );
 
 ##### Defaults
+has max_height     => ( is => 'ro',   default  => '+Inf',
+    isa => PositiveOrZeroNum
+);
 has min_width      => ( is => 'ro',   default  => 0,  isa =>PositiveOrZeroNum);
 has row_height     => ( is => 'ro',   default  => 12, isa => PositiveNum,    );
 has str_width_mult => ( is => 'ro',   default  => 1,  isa => StrictNum       );
@@ -92,22 +95,28 @@ sub draw {
     $self->pdf->_stroke( $self->_border_width );
 
     for my $row ( 1 .. $self->_rows ) {
-        $self->_draw_row( $row, $data->[$row-1] );
+        $self->_draw_row( $row, $data->[$row-1] )
+            or return @$data[$row-1 .. $self->_rows-1];
     }
+
+    return;
 }
 
 sub _draw_row {
     my ( $self, $r_num, $cells ) = @_;
 
     for my $cell ( 1 .. @$cells ) {
-        $self->_draw_cell( $r_num, $cell, $cells->[$cell-1] );
+        $self->_draw_cell( $r_num, $cell, $cells->[$cell-1] )
+            or return;
     }
+
+    return 1;
 }
 
 sub _draw_cell {
     my ( $self, $r_num, $c_num, $text ) = @_;
     my $pdf = $self->pdf;
-    return unless length $text;
+    return 1 unless length $text;
 
     my $x1 = $self->_x;
     $x1   += $self->_col_widths->[$_] for 0 .. $c_num - 2;
@@ -115,6 +124,8 @@ sub _draw_cell {
 
     my $x2 = $x1 + $self->_col_widths->[$c_num-1];
     my $y2 = $y1 + $self->row_height + 2*$CELL_PADDING_Y;
+
+    return if $y2 > $self->max_height;
 
     my $saved_color = $pdf->_cur_color;
     $pdf->color( $self->_border_color );
@@ -136,7 +147,7 @@ sub _draw_cell {
         );
         $pdf->font( $saved_font );
 
-        return;
+        return 1;
     }
 
     $pdf->text(
