@@ -3,83 +3,67 @@ package Mojo::PDF::Primitive::Table;
 # VERSION
 
 use List::AllUtils qw/sum/;
-
+use Types::Standard qw/ArrayRef  Tuple  InstanceOf  StrictNum/;
+use Types::Common::Numeric qw/PositiveInt  PositiveOrZeroNum  PositiveNum/;
 use Moo 2.000002;
 use namespace::clean;
+
 $Carp::Internal{ (__PACKAGE__) }++;
 my $CELL_PADDING_X = 12;
 my $CELL_PADDING_Y = 6;
 
-has $_ => is => 'lazy'
-    for qw/_x  _y  _cols  _rows  _col_widths  _border_width  _border_color/;
-
-has pdf => ( is => 'ro', required => 1 );
-has min_width => ( is => 'ro', required => 1 );
-has str_width_mult => ( is => 'ro', default => 1 );
-
-has row_height => (
-    is => 'ro',
-    default => 12,
-    isa => sub {
-        die 'Must have positive row height'
-            unless $_[0] and $_[0] =~ /^(\d+|\d*\.\d+)$/;
-    },
+has at             => ( is => 'ro',   required => 1,  isa => Tuple[Int,Int], );
+has data           => ( is => 'ro',   required => 1,  isa => ArrayRef,       );
+has pdf            => ( is => 'ro',   required => 1,
+    isa => InstanceOf['Mojo::PDF'],
 );
 
-has data => (
-    is       => 'ro',
-    isa      => sub { die "Must have arrayref" unless ref $_[0] eq 'ARRAY' },
-    required => 1,
+has min_width      => ( is => 'ro',   default  => 0,  isa =>PositiveOrZeroNum);
+has row_height     => ( is => 'ro',   default  => 12, isa => PositiveNum,    );
+has str_width_mult => ( is => 'ro',   default  => 1,  isa => StrictNum       );
+has border         => ( is => 'ro',   default  => [.5, '#ccc'],
+    isa => ArrayRef,
 );
 
-has border => (
-    is       => 'ro',
-    isa      => sub { die "Must have arrayref" unless ref $_[0] eq 'ARRAY' },
-    required => 1,
-);
+has _border_color  => ( is => 'lazy',                                        );
+has _border_width  => ( is => 'lazy', builder  => sub { shift->border->[0]  });
+has _col_widths    => ( is => 'lazy',                                        );
+has _cols          => ( is => 'lazy',                                        );
+has _rows          => ( is => 'lazy', builder  => sub {scalar @{shift->data}});
+has _x             => ( is => 'lazy', builder  => sub { shift->at->[0]      });
+has _y             => ( is => 'lazy', builder  => sub { shift->at->[1]      });
 
-has at   => (
-    is       => 'ro',
-    required => 1,
-    isa      => sub {
-        my $at = shift;
-        die "Must have arrayref" unless ref $at eq 'ARRAY';
-        die "Must have two coordinates" unless @$at == 2;
-    },
-);
+sub _builder__border_color {
+    my $border = shift->border;
+    shift @$border; # get rid of border width
+    return @$border;
+}
 
-sub _build__x { shift->at->[0] }
-sub _build__y { shift->at->[1] }
-sub _build__rows { scalar @{ shift->data } }
-sub _build__border_width { shift->border->[0] }
-sub _build__border_color { shift->border->[1] }
-
-sub _build__cols {
+sub _builder__cols {
     my $data = shift->data;
     my $col_num = 0;
     @$_ > $col_num and $col_num = @$_ for @$data;
     return $col_num;
 }
 
-sub _build__col_widths {
+sub _builder__col_widths {
     my $self = shift;
     my $data = $self->data;
     my $col_num = $self->_cols;
 
     my @col_widths = (0) x $col_num;
+    my $w_mult = $self->str_width_mult;
     for my $row ( @$data ) {
         for ( 0 .. $col_num - 1 ) {
             next unless defined $row->[$_];
-            my $w
-            = $self->pdf->_str_width( $row->[$_] ) * $self->str_width_mult;
-
+            my $w = $w_mult * $self->pdf->_str_width( $row->[$_] );
             $col_widths[$_] = $w if $w > $col_widths[$_];
         }
     }
 
     $_ += 2*$CELL_PADDING_X for @col_widths; # cell padding
 
-    # Stretch largest column to full table width
+    # Stretch largest column to fill table to its min_width
     if ( $self->min_width > sum @col_widths ) {
         my $idx = 0;
         for ( 0 .. $#col_widths ) {
@@ -91,7 +75,9 @@ sub _build__col_widths {
     return \@col_widths;
 }
 
+####
 #### METHODS
+####
 
 sub draw {
     my $self = shift;
@@ -117,20 +103,19 @@ sub _draw_cell {
     my $pdf = $self->pdf;
 
     my $x1 = $self->_x;
-    $x1 += $self->_col_widths->[$_] for 0 .. $c_num - 2;
+    $x1   += $self->_col_widths->[$_] for 0 .. $c_num - 2;
     my $y1 = $self->_y + ($self->row_height + 2*$CELL_PADDING_Y)*($r_num-1);
 
     my $x2 = $x1 + $self->_col_widths->[$c_num-1];
     my $y2 = $y1 + $self->row_height + 2*$CELL_PADDING_Y;
 
-    my $saved_color = $self->pdf->_cur_color;
-    $self->pdf->color($self->_border_color);
+    my $saved_color = $pdf->_cur_color;
+    $pdf->color( $self->_border_color );
     $pdf->_line( $x1, $y1, $x2, $y1 );
     $pdf->_line( $x2, $y1, $x2, $y2 );
     $pdf->_line( $x2, $y2, $x1, $y2 );
     $pdf->_line( $x1, $y2, $x1, $y1 );
-
-    $self->pdf->color( @$saved_color );
+    $pdf->color( @$saved_color );
 
     $pdf->text(
         $text,

@@ -1,6 +1,8 @@
 Revision history for Mojo-PDF
 
 1.001002  2015-09-24
+    - Fixed bug where table's border failed to accept RGB tuples
+    - Table's min_width and border are now optional
     - Documentation corrections and clarifications (#1, #2, #3, #4, #5)
 
 1.001001  2015-09-23

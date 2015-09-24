@@ -243,11 +243,9 @@ Mojo::PDF - Generate PDFs with the goodness of Mojo!
         ->font('galaxie_it')->size(8)->color
         ->table(
             at        => [20.4, 268],
-            min_width => 571.2,
-            border    => [.5, '#CFE3EF'],
             data      => [
                 [ qw{Product  Description Qty  Price  U/M} ],
-                @$data,
+                @data,
             ],
         )
 
@@ -346,14 +344,14 @@ Specifies active font size in points. Defaults to C<12> points.
 
     $t->table(
         at        => [20.4, 268],
-        min_width => 571.2,
-        border    => [.5, '#CFE3EF'],
         data      => [
             [ qw{Product  Description Qty  Price  U/M} ],
             @$data,
         ],
 
         #Optional:
+        border         => [.5, '#CFE3EF'],
+        min_width      => 571.2,
         row_height     => 24,
         str_width_mult => 1.1,
     );
@@ -366,20 +364,6 @@ Render a table on the current page. Takes these arguments:
 
 An arrayref with X and Y point values of the table's top, left corner.
 
-=head3 C<min_width>
-
-    min_width => 571.2,
-
-Table's minimum width in points. The largest column will be widened
-to make the table at least this wide.
-
-=head3 C<border>
-
-    border => [.5, '#CFE3EF'],
-
-Takes an arrayref with the width (in points) and colour of the table's borders.
-Color allows the same values as L</color> method.
-
 =head3 C<data>
 
     data => [
@@ -389,6 +373,21 @@ Color allows the same values as L</color> method.
 
 An arrayref of rows, each of which is an arrayref of strings representing
 table cell values.
+
+=head3 C<border>
+
+    border => [.5, '#CFE3EF'],
+
+B<Optional>. Takes an arrayref with the width (in points) and colour of
+the table's borders. Color allows the same values as L</color> method.
+B<Defaults to:> C<[.5, '#ccc']>
+
+=head3 C<min_width>
+
+    min_width => 571.2,
+
+B<Optional>. Table's minimum width in points (zero by default).
+The largest column will be widened to make the table at least this wide.
 
 =head3 C<row_height>
 
