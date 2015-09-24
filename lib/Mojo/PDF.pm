@@ -108,6 +108,8 @@ sub size {
 
 sub color {
     my $self = shift;
+    @_ = @{$_[0]} if @_ == 1 and ref $_[0] eq 'ARRAY';
+
     my ( $r, $g, $b )
         = @_ == 0 ? (0, 0, 0) # default to black
             : @_ == 1

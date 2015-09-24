@@ -12,7 +12,9 @@ $Carp::Internal{ (__PACKAGE__) }++;
 my $CELL_PADDING_X = 12;
 my $CELL_PADDING_Y = 6;
 
-has at             => ( is => 'ro',   required => 1,  isa => Tuple[Int,Int], );
+has at             => ( is => 'ro',   required => 1,
+    isa => Tuple[ StrictNum, StrictNum ],
+);
 has data           => ( is => 'ro',   required => 1,  isa => ArrayRef,       );
 has pdf            => ( is => 'ro',   required => 1,
     isa => InstanceOf['Mojo::PDF'],
@@ -21,7 +23,7 @@ has pdf            => ( is => 'ro',   required => 1,
 has min_width      => ( is => 'ro',   default  => 0,  isa =>PositiveOrZeroNum);
 has row_height     => ( is => 'ro',   default  => 12, isa => PositiveNum,    );
 has str_width_mult => ( is => 'ro',   default  => 1,  isa => StrictNum       );
-has border         => ( is => 'ro',   default  => [.5, '#ccc'],
+has border         => ( is => 'ro',   default  => sub { [.5, '#ccc'] },
     isa => ArrayRef,
 );
 
@@ -33,20 +35,20 @@ has _rows          => ( is => 'lazy', builder  => sub {scalar @{shift->data}});
 has _x             => ( is => 'lazy', builder  => sub { shift->at->[0]      });
 has _y             => ( is => 'lazy', builder  => sub { shift->at->[1]      });
 
-sub _builder__border_color {
+sub _build__border_color {
     my $border = shift->border;
     shift @$border; # get rid of border width
-    return @$border;
+    return $border;
 }
 
-sub _builder__cols {
+sub _build__cols {
     my $data = shift->data;
     my $col_num = 0;
     @$_ > $col_num and $col_num = @$_ for @$data;
     return $col_num;
 }
 
-sub _builder__col_widths {
+sub _build__col_widths {
     my $self = shift;
     my $data = $self->data;
     my $col_num = $self->_cols;
@@ -116,6 +118,21 @@ sub _draw_cell {
     $pdf->_line( $x2, $y2, $x1, $y2 );
     $pdf->_line( $x1, $y2, $x1, $y1 );
     $pdf->color( @$saved_color );
+
+    # Render table header
+    if ( $r_num == 1 and $pdf->_fonts->{$pdf->_cur_font . '_bold'} ) {
+        my $saved_font = $pdf->_cur_font;
+        $pdf->font( $pdf->_cur_font . '_bold' );
+        $pdf->text(
+            $text,
+            $x1 + ( .5*$self->_col_widths->[$c_num-1] ),
+            $y1 + $self->row_height + $CELL_PADDING_Y - 2,
+            'center',
+        );
+        $pdf->font( $saved_font );
+
+        return;
+    }
 
     $pdf->text(
         $text,
