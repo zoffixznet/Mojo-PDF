@@ -243,9 +243,9 @@ Mojo::PDF - Generate PDFs with the goodness of Mojo!
             galaxie_it => 'fonts/GalaxiePolaris-BookItalic.ttf',
         )
         ->font('galaxie')->size(24)->color('#353C8C')
-            ->text( 'Weeee', 20.4, 75 )
-            ->text( 'eeee continuing same line!')
-            ->text( 'Started a new line!', 20.4 )
+            ->text('Weeee', 20.4, 75 )
+            ->text('eeee continuing same line!')
+            ->text('Started a new line!', 20.4 )
 
         # Render a table
         ->font('galaxie_it')->size(8)->color
