@@ -12,6 +12,8 @@ use List::AllUtils qw/sum/;
 use Mojo::PDF::Primitive::Table;
 use namespace::clean;
 
+$SIG{'__WARN__'} = sub { warn @_ unless caller eq 'PDF::Reuse'; };
+
 has [qw/_x _y _line_height/] => 0;
 has [qw/_cur_font  _cur_size  _cur_color/];
 has _fonts => sub { +{} };
@@ -191,6 +193,7 @@ sub _line {
 sub _str_width {
     my $self = shift;
     my $str = shift;
+
     return prStrWidth(
         $str,
         $self->_cur_font//'Helvetica',
@@ -375,6 +378,7 @@ An arrayref with X and Y point values of the table's top, left corner.
 
 An arrayref of rows, each of which is an arrayref of strings representing
 table cell values. Setting L</headers> will render first row as a table header.
+Cells that are C<undef>/empty string will not be rendered.
 
 =head3 C<border>
 

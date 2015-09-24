@@ -12,6 +12,7 @@ $Carp::Internal{ (__PACKAGE__) }++;
 my $CELL_PADDING_X = 12;
 my $CELL_PADDING_Y = 6;
 
+##### Required
 has at             => ( is => 'ro',   required => 1,
     isa => Tuple[ StrictNum, StrictNum ],
 );
@@ -20,14 +21,16 @@ has pdf            => ( is => 'ro',   required => 1,
     isa => InstanceOf['Mojo::PDF'],
 );
 
+##### Defaults
 has min_width      => ( is => 'ro',   default  => 0,  isa =>PositiveOrZeroNum);
 has row_height     => ( is => 'ro',   default  => 12, isa => PositiveNum,    );
 has str_width_mult => ( is => 'ro',   default  => 1,  isa => StrictNum       );
-has header         => ( is => 'ro',   default  => 0,  isa => Str             );
+has header         => ( is => 'ro',                   isa => Str             );
 has border         => ( is => 'ro',   default  => sub { [.5, '#ccc'] },
     isa => ArrayRef,
 );
 
+##### Lazy
 has _border_color  => ( is => 'lazy',                                        );
 has _border_width  => ( is => 'lazy', builder  => sub { shift->border->[0]  });
 has _col_widths    => ( is => 'lazy',                                        );
@@ -58,7 +61,7 @@ sub _build__col_widths {
     my $w_mult = $self->str_width_mult;
     for my $row ( @$data ) {
         for ( 0 .. $col_num - 1 ) {
-            next unless defined $row->[$_];
+            next unless length $row->[$_];
             my $w = $w_mult * $self->pdf->_str_width( $row->[$_] );
             $col_widths[$_] = $w if $w > $col_widths[$_];
         }
@@ -104,6 +107,7 @@ sub _draw_row {
 sub _draw_cell {
     my ( $self, $r_num, $c_num, $text ) = @_;
     my $pdf = $self->pdf;
+    return unless length $text;
 
     my $x1 = $self->_x;
     $x1   += $self->_col_widths->[$_] for 0 .. $c_num - 2;
