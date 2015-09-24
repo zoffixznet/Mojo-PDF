@@ -381,7 +381,7 @@ An arrayref with X and Y point values of the table's top, left corner.
     ],
 
 An arrayref of rows, each of which is an arrayref of strings representing
-table cell values. Setting L</headers> will render first row as a table header.
+table cell values. Setting L</header> will render first row as a table header.
 Cells that are C<undef>/empty string will not be rendered.
 
 =head3 C<border>
