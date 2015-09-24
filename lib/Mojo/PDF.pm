@@ -284,8 +284,7 @@ of the PDF you want to generate.
 
     $p->end;
 
-Finish rendering your PDF and save it. Currently, you cannot reuse the same
-C<Mojo::PDF> object to create more than one PDF.
+Finish rendering your PDF and save it.
 
 =head2 C<add_fonts>
 
