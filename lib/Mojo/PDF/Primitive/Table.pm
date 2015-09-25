@@ -3,7 +3,7 @@ package Mojo::PDF::Primitive::Table;
 # VERSION
 
 use List::AllUtils qw/sum/;
-use Types::Standard qw/ArrayRef  Tuple  InstanceOf  StrictNum  Str/;
+use Types::Standard qw/ArrayRef  Tuple  InstanceOf  StrictNum  Str  CodeRef/;
 use Types::Common::Numeric qw/PositiveInt  PositiveOrZeroNum  PositiveNum/;
 use Moo 2.000002;
 use namespace::clean;
@@ -13,40 +13,44 @@ my $CELL_PADDING_X = 12;
 my $CELL_PADDING_Y = 6;
 
 ##### Required
-has at             => ( is => 'ro',   required => 1,
-    isa => Tuple[ StrictNum, StrictNum ],
+has at => (
+    is       => 'ro',
+    required => 1,
+    isa      => Tuple[ StrictNum, StrictNum ],
 );
-has data           => ( is => 'ro',   required => 1,  isa => ArrayRef,       );
-has pdf            => ( is => 'ro',   required => 1,
-    isa => InstanceOf['Mojo::PDF'],
+has data       => ( is => 'ro',   required => 1,  isa => ArrayRef,       );
+has pdf => (
+    is       => 'ro',
+    required => 1,
+    isa      => InstanceOf['Mojo::PDF'],
 );
 
 ##### Defaults
-has max_height     => ( is => 'ro',   default  => '+Inf',
-    isa => PositiveOrZeroNum
+has max_height => (
+    is      => 'ro',
+    default => '+Inf',
+    coerce  => sub { ref $_[0] ? $_[0]->[0] : $_[0] },
+    isa     => PositiveOrZeroNum,
 );
 has min_width      => ( is => 'ro',   default  => 0,  isa =>PositiveOrZeroNum);
 has row_height     => ( is => 'ro',   default  => 12, isa => PositiveNum,    );
 has str_width_mult => ( is => 'ro',   default  => 1,  isa => StrictNum       );
 has header         => ( is => 'ro',                   isa => Str             );
-has border         => ( is => 'ro',   default  => sub { [.5, '#ccc'] },
-    isa => ArrayRef,
+has border => (
+    is      => 'ro',
+    isa     => Tuple[PositiveOrZeroNum, Str],
+    default => sub { [.5, '#ccc'] },
 );
 
 ##### Lazy
-has _border_color  => ( is => 'lazy',                                        );
+has _border_color  => ( is => 'lazy', builder  => sub { shift->border->[1]  });
 has _border_width  => ( is => 'lazy', builder  => sub { shift->border->[0]  });
 has _col_widths    => ( is => 'lazy',                                        );
 has _cols          => ( is => 'lazy',                                        );
+has _header_row    => ( is => 'lazy', builder  => sub { shift->data->[0]    });
 has _rows          => ( is => 'lazy', builder  => sub {scalar @{shift->data}});
 has _x             => ( is => 'lazy', builder  => sub { shift->at->[0]      });
 has _y             => ( is => 'lazy', builder  => sub { shift->at->[1]      });
-
-sub _build__border_color {
-    my $border = shift->border;
-    shift @$border; # get rid of border width
-    return $border;
-}
 
 sub _build__cols {
     my $data = shift->data;
@@ -96,7 +100,10 @@ sub draw {
 
     for my $row ( 1 .. $self->_rows ) {
         $self->_draw_row( $row, $data->[$row-1] )
-            or return @$data[$row-1 .. $self->_rows-1];
+            or return (
+                $self->header ? $self->_header_row : (),
+                @$data[$row-1 .. $self->_rows-1],
+            );
     }
 
     return;

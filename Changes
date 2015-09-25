@@ -1,5 +1,9 @@
 Revision history for Mojo-PDF
 
+1.003001  2015-09-25
+    [Table primitive]
+        - Changed behaviour of 'max_height' to use callback for overflown rows
+
 1.002001  2015-09-24
     [Table primitive]
         - Added 'header' and 'max_height' options

@@ -136,15 +136,18 @@ sub table {
     my $self = shift;
     my %conf = @_;
 
-    $conf{row_height} ||= $self->_line_height;
+    DRAW: {
+        $conf{row_height} ||= $self->_line_height;
 
-    my $t = Mojo::PDF::Primitive::Table->new(
-        pdf => $self,
-        %conf,
-    );
+        my $t = Mojo::PDF::Primitive::Table->new( pdf => $self, %conf );
+        my @overflow = $t->draw
+            and $conf{max_height}
+            or return $self;
 
-    my @overflow = $t->draw;
-    return \@overflow if $conf{max_height};
+        $conf{data} = $conf{max_height}->[1]->(\@overflow, \%conf, $self);
+        @{ $conf{data} || [] }
+            and redo DRAW;
+    }
 
     $self;
 }
@@ -359,7 +362,12 @@ Specifies active font size in points. Defaults to C<12> points.
         #Optional:
         border         => [.5, '#CFE3EF'],
         header         => 'galaxie_bold',
-        max_height     => 744,
+        max_height     => [ 744, sub {
+            my ( $data, $conf, $pdf ) = @_;
+            $conf->{at}[1] = 50;
+            $pdf->page;
+            $data;
+        },
         min_width      => 571.2,
         row_height     => 24,
         str_width_mult => 1.1,
@@ -402,20 +410,24 @@ C<header> font. B<Not set by default.>
 
 =head3 C<max_height>
 
-    {
-        $data = $pdf->table(
-            max_height => 744,
-            data       => $data,
-            at         => [20.4, 50],
-        );
+    $pdf->table(
+        at         => [20.4, 300],
+        data       => $data,
+        max_height => [ 744, sub {
+            my ( $data, $conf, $pdf ) = @_;
+            $conf->{at}[1] = 50; # start table higher on subsequent pages
+            $pdf->page;          # start a new page
+            $data;               # render remaining rows
+        },
+    );
 
-        @$data and $pdf->page and redo;
-    }
-
-B<Optional>. B<ALTERS RETURN VALUE OF C<table> METHOD>. Specifies the maximum
-height of the table. Specifying this option makes C<table> method return
-an arrayref of rows that did not fit into the table. You can use that to
-add a new page and continue rendering the overflown data.
+B<Optional>. Takes an arrayref with two arguments: the maximum height
+(in points) the table should reach and the callback to use when not
+all rows could fit. The B<return value> of the callback will be used as
+the new collection of rows to render.
+The C<@_> will contain remaining rows to render,
+hashref of the options you've passed to C<table> method, and the
+C<Mojo::PDF> object.
 
 =head3 C<min_width>
 
