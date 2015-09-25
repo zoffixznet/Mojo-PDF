@@ -14,8 +14,8 @@ use namespace::clean;
 
 $SIG{'__WARN__'} = sub { warn @_ unless caller eq 'PDF::Reuse'; };
 
-has [qw/_x _y _line_height/] => 0;
-has [qw/_cur_font  _cur_size  _cur_color/];
+has [qw/_line_height  _x  _y            /] => 0;
+has [qw/_cur_color  _cur_font  _cur_size/]     ;
 has _fonts => sub { +{} };
 
 my $PAGE_SIZE_Y = 792;
@@ -35,38 +35,56 @@ my %STD_FONTS = (
     'Helvetica-BoldOblique' => 'Helvetica-BoldOblique',
     'Symbol'                => 'Symbol',
     'ZapfDingbats'          => 'ZapfDingbats',
-    'TR'  => 'Times-Roman',
-    'TB'  => 'Times-Bold',
-    'TI'  => 'Times-Italic',
-    'TBI' => 'Times-BoldItalic',
-    'C'   => 'Courier',
-    'CB'  => 'Courier-Bold',
-    'CO'  => 'Courier-Oblique',
-    'CBO' => 'Courier-BoldOblique',
-    'H'   => 'Helvetica',
-    'HB'  => 'Helvetica-Bold',
-    'HO'  => 'Helvetica-Oblique',
-    'HBO' => 'Helvetica-BoldOblique',
-    'S'   => 'Symbol',
-    'Z'   => 'ZapfDingbats'
+    'TR'                    => 'Times-Roman',
+    'TB'                    => 'Times-Bold',
+    'TI'                    => 'Times-Italic',
+    'TBI'                   => 'Times-BoldItalic',
+    'C'                     => 'Courier',
+    'CB'                    => 'Courier-Bold',
+    'CO'                    => 'Courier-Oblique',
+    'CBO'                   => 'Courier-BoldOblique',
+    'H'                     => 'Helvetica',
+    'HB'                    => 'Helvetica-Bold',
+    'HO'                    => 'Helvetica-Oblique',
+    'HBO'                   => 'Helvetica-BoldOblique',
+    'S'                     => 'Symbol',
+    'Z'                     => 'ZapfDingbats'
 );
 
-sub new {
-    my ( $class, $filename ) = @_;
-    my $self = bless {}, $class;
+sub __hex2rgb {
+    my $hex = shift;
+    my $c = Graphics::Color::RGB->from_hex_string( $hex )
+        or croak "Could not interpret color '$hex' as hex";
 
-    prFile $filename;
-    # use US-Letter pages
-    prMbox ( 0, 0, $PAGE_SIZE_X, $PAGE_SIZE_Y );
-    $self->size;
+    return $c->as_array;
+}
+
+sub __inv_y { $_ = $PAGE_SIZE_Y - $_ for @_; @_ }
+
+sub _line {
+    my $self = shift;
+    my ( $x1, $y1, $x2, $y2 ) = @_;
+    __inv_y($y1, $y2);
+    prAdd "$x1 $y1 m $x2 $y2 l S";
 
     $self;
 }
 
-sub mixin {
+sub _str_width {
     my $self = shift;
-    my ( $doc, $page ) = @_;
-    prForm { file => $doc, page => $page//1 };
+    my $str = shift;
+
+    return prStrWidth(
+        $str,
+        $self->_cur_font//'Helvetica',
+        $self->_cur_size//12
+    ) // 0;
+}
+
+sub _stroke {
+    my $self = shift;
+    my $weight = shift;
+    prAdd "$weight w";
 
     $self;
 }
@@ -80,30 +98,6 @@ sub add_fonts {
             . 'standard font names. Please choose another one';
         $self->_fonts->{$_} = $fonts{ $_ };
     };
-
-    $self;
-}
-
-sub font {
-    my $self = shift;
-    my $name = shift;
-
-    $STD_FONTS{$name} or $self->_fonts->{$name}
-        or croak "Unknown font '$name'";
-
-    $STD_FONTS{$name} ? prFont($name) : prTTFont( $self->_fonts->{$name} );
-    $self->_cur_font($name);
-
-    $self;
-}
-
-sub size {
-    my $self = shift;
-    my $size = shift // 12;
-
-    $self->_cur_size( $size );
-    prFontSize $size;
-    $self->_line_height( $size*1.4 );
 
     $self;
 }
@@ -124,12 +118,60 @@ sub color {
     $self;
 }
 
-sub __hex2rgb {
-    my $hex = shift;
-    my $c = Graphics::Color::RGB->from_hex_string( $hex )
-        or croak "Could not interpret color '$hex' as hex";
+sub end {
+    my $self = shift;
+    prEnd;
+}
 
-    return $c->as_array;
+sub font {
+    my $self = shift;
+    my $name = shift;
+
+    $STD_FONTS{$name} or $self->_fonts->{$name}
+        or croak "Unknown font '$name'";
+
+    $STD_FONTS{$name} ? prFont($name) : prTTFont( $self->_fonts->{$name} );
+    $self->_cur_font($name);
+
+    $self;
+}
+
+sub mixin {
+    my $self = shift;
+    my ( $doc, $page ) = @_;
+    prForm { file => $doc, page => $page//1 };
+
+    $self;
+}
+
+sub new {
+    my ( $class, $filename ) = @_;
+    my $self = bless {}, $class;
+
+    prFile $filename;
+    # use US-Letter pages
+    prMbox ( 0, 0, $PAGE_SIZE_X, $PAGE_SIZE_Y );
+    $self->size;
+
+    $self;
+}
+
+sub page {
+    my $self = shift;
+    prPage;
+
+    $self;
+}
+
+sub size {
+    my $self = shift;
+    my $size = shift // 12;
+
+    $self->_cur_size( $size );
+    prFontSize $size;
+    $self->_line_height( $size*1.4 );
+
+    $self;
 }
 
 sub table {
@@ -152,14 +194,6 @@ sub table {
     $self;
 }
 
-sub _stroke {
-    my $self = shift;
-    my $weight = shift;
-    prAdd "$weight w";
-
-    $self;
-}
-
 sub text {
     my $self = shift;
     my ( $string, $x, $y, $align, $rotation ) = @_;
@@ -172,40 +206,6 @@ sub text {
     $self->_x( (prText($x, __inv_y($y), $string, $align, $rotation))[1] );
 
     $self;
-}
-
-sub page {
-    my $self = shift;
-    prPage;
-
-    $self;
-}
-
-sub end {
-    my $self = shift;
-    prEnd;
-}
-
-sub __inv_y { $_ = $PAGE_SIZE_Y - $_ for @_; $_[0] }
-
-sub _line {
-    my $self = shift;
-    my ( $x1, $y1, $x2, $y2 ) = @_;
-    __inv_y($y1, $y2);
-    prAdd "$x1 $y1 m $x2 $y2 l S";
-
-    $self;
-}
-
-sub _str_width {
-    my $self = shift;
-    my $str = shift;
-
-    return prStrWidth(
-        $str,
-        $self->_cur_font//'Helvetica',
-        $self->_cur_size//12
-    ) // 0;
 }
 
 q|

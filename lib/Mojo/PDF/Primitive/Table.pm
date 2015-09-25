@@ -25,7 +25,16 @@ has pdf => (
     isa      => InstanceOf['Mojo::PDF'],
 );
 
-##### Defaults
+##### Defaults/Optional
+has header => (
+    is => 'ro',
+    isa => Str,
+);
+has border => (
+    is      => 'ro',
+    default => sub { [.5, '#ccc'] },
+    isa     => Tuple[PositiveOrZeroNum, Str],
+);
 has max_height => (
     is      => 'ro',
     default => '+Inf',
@@ -35,14 +44,8 @@ has max_height => (
 has min_width      => ( is => 'ro',   default  => 0,  isa =>PositiveOrZeroNum);
 has row_height     => ( is => 'ro',   default  => 12, isa => PositiveNum,    );
 has str_width_mult => ( is => 'ro',   default  => 1,  isa => StrictNum       );
-has header         => ( is => 'ro',                   isa => Str             );
-has border => (
-    is      => 'ro',
-    isa     => Tuple[PositiveOrZeroNum, Str],
-    default => sub { [.5, '#ccc'] },
-);
 
-##### Lazy
+##### Internal
 has _border_color  => ( is => 'lazy', builder  => sub { shift->border->[1]  });
 has _border_width  => ( is => 'lazy', builder  => sub { shift->border->[0]  });
 has _col_widths    => ( is => 'lazy',                                        );
