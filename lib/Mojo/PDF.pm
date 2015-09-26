@@ -420,7 +420,7 @@ Add a new blank page to your document and sets it as the currently active page.
 
 Sets rules for bits of text when rendering with
 L</text> or L</table>. Available overrides are L</font>, L</color>,
-and C</size>. To disable a rule, set its value to C<undef>.
+and L</size>. To disable a rule, set its value to C<undef>.
 
 =head2 C<size>
 
