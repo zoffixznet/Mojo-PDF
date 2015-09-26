@@ -7,16 +7,19 @@ use Mojo::Base -base;
 use Carp qw/croak/;
 $Carp::Internal{ (__PACKAGE__) }++;
 use PDF::Reuse 0.36;
-use Graphics::Color::RGB;
+use Number::RGB 1.4;
 use List::AllUtils qw/sum/;
 use Mojo::PDF::Primitive::Table;
 use namespace::clean;
 
 $SIG{'__WARN__'} = sub { warn @_ unless caller eq 'PDF::Reuse'; };
 
-has [qw/_line_height  _x  _y            /] => 0;
-has [qw/_cur_color  _cur_font  _cur_size/]     ;
+has [qw/_line_height  _x  _y /] => 0;
+has _cur_color => sub { [0, 0, 0] };
+has _cur_font  => 'TR';
+has _cur_size  => 12;
 has _fonts => sub { +{} };
+has _rules => sub { +{} };
 
 my $PAGE_SIZE_Y = 792;
 my $PAGE_SIZE_X = 612;
@@ -53,10 +56,10 @@ my %STD_FONTS = (
 
 sub __hex2rgb {
     my $hex = shift;
-    my $c = Graphics::Color::RGB->from_hex_string( $hex )
+    my $c = eval { Number::RGB->new( hex => $hex ) }
         or croak "Could not interpret color '$hex' as hex";
 
-    return $c->as_array;
+    return map $_/255, @{ $c->rgb };
 }
 
 sub __inv_y { $_ = $PAGE_SIZE_Y - $_ for @_; @_ }
@@ -163,6 +166,18 @@ sub page {
     $self;
 }
 
+sub rule {
+    my ( $self, %new ) = @_;
+    my $rules = $self->_rules;
+
+    for ( keys %new ) {
+        $rules->{$_} = $new{$_};
+        delete $rules->{$_} unless defined $rules->{$_};
+    }
+
+    $self;
+}
+
 sub size {
     my $self = shift;
     my $size = shift // 12;
@@ -197,12 +212,58 @@ sub table {
 sub text {
     my $self = shift;
     my ( $string, $x, $y, $align, $rotation ) = @_;
-
-    $x //= $self->_x;
+    $self->_x( $x //= $self->_x );
 
     # Don't switch to new line, if neither X nor Y were given;
     $y //= $self->_y + ( @_ > 1 ? $self->_line_height : 0 );
     $self->_y( $y );
+
+    my @text = ( { text => $string } );
+    for my $r ( values %{$self->_rules} ) {
+        my @new_text;
+        for my $bit ( @text ) {
+            if ( $bit->{marked} ) { push @new_text, $bit; next; }
+
+            my $mark = 0;
+
+            for ( split /($r->{re})/, $bit->{text} ) {
+                if ( $_ =~ /$r->{re}/ ) { $mark = 1; next; }
+                if ( $mark ) {
+                    $mark = 0;
+                    push @new_text, { marked => 1, text => $_, %$r };
+                    next;
+                }
+
+                push @new_text, { text => $_ };
+            }
+        }
+
+        @text = @new_text;
+    }
+
+    my ( $orig_font, $orig_size, $orig_color )
+        = map $self->$_, qw/_cur_font  _cur_size  _cur_color/;
+
+    for my $bit ( @text ) {
+        if ( $bit->{marked} ) {
+            if ( $bit->{font} )  { $self->font(  $bit->{font}  ); }
+            if ( $bit->{size} )  { $self->size(  $bit->{size}  ); }
+            if ( $bit->{color} ) { $self->color( $bit->{color} ); }
+            $self->_text($bit->{text}, $self->_x, $self->_y,$align,$rotation );
+            if ( $bit->{font} )  { $self->font(  $orig_font  ); }
+            if ( $bit->{size} )  { $self->size(  $orig_size  ); }
+            if ( $bit->{color} ) { $self->color( $orig_color ); }
+            next;
+        }
+        $self->_text( $bit->{text}, $self->_x, $self->_y, $align, $rotation );
+    }
+
+    $self;
+}
+
+sub _text {
+    my $self = shift;
+    my ( $string, $x, $y, $align, $rotation, $mods ) = @_;
     $self->_x( (prText($x, __inv_y($y), $string, $align, $rotation))[1] );
 
     $self;
@@ -341,6 +402,25 @@ which defaults to the first page.
     $pdf->page;
 
 Add a new blank page to your document and sets it as the currently active page.
+
+=head2 C<rule>
+
+    ->rule(
+        bold  => { re => qr/\*\*(.?)\*\*/, font => 'galaxie_bold' },
+        shiny => {
+            re    => qr/!!(.?)!!/,
+            font  => 'galaxie_bold',
+            color => '#FBBC05',
+            size  => 30,
+        },
+    )
+    ->text('Normal **bold text** lalalala !!LOOK SHINY!!')
+    ->rule( shiny => undef )
+    ->text('!!no longer shiny!!')
+
+Sets rules for bits of text when rendering with
+L</text> or L</table>. Available overrides are L</font>, L</color>,
+and C</size>. To disable a rule, set its value to C<undef>.
 
 =head2 C<size>
 

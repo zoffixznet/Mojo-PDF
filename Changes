@@ -1,8 +1,9 @@
 Revision history for Mojo-PDF
 
-1.003001  2015-09-25
+1.003001  2015-09-26
     [Table primitive]
         - Changed behaviour of 'max_height' to use callback for overflown rows
+        - Added "rule" method
 
 1.002001  2015-09-24
     [Table primitive]
