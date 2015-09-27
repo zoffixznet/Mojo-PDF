@@ -1,5 +1,8 @@
 Revision history for Mojo-PDF
 
+1.003002  2015-09-27
+  - Fixed incorrect table cell padding handling
+
 1.003001  2015-09-26
   - Changed behaviour of table's 'max_height'
     to use callback for overflown rows

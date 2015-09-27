@@ -162,7 +162,7 @@ sub _draw_cell {
 
     $pdf->text(
         $text,
-        $x1 + $CELL_PADDING_X,
+        $x1 + .5*$CELL_PADDING_X,
         $y1 + $self->row_height + $CELL_PADDING_Y - 2
     );
 }
