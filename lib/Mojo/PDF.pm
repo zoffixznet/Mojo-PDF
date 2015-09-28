@@ -263,7 +263,7 @@ sub text {
 
 sub _text {
     my $self = shift;
-    my ( $string, $x, $y, $align, $rotation, $mods ) = @_;
+    my ( $string, $x, $y, $align, $rotation ) = @_;
     $self->_x( (prText($x, __inv_y($y), $string, $align, $rotation))[1] );
 
     $self;
