@@ -449,6 +449,7 @@ Specifies active font size in points. Defaults to C<12> points.
             $data;
         },
         min_width      => 571.2,
+        padding        => [3, 6],
         row_height     => 24,
         str_width_mult => 1.1,
     );
@@ -516,6 +517,17 @@ C<Mojo::PDF> object.
 B<Optional>. Table's minimum width in points (zero by default).
 The largest column will be widened to make the table at least this wide.
 
+=head3 C<padding>
+
+    padding => [3],          # all sides 3
+    padding => [3, 6],       # top/bottom 3, left/right 6
+    padding => [3, 6, 4],    # top 3, left/right 6, bottom 4
+    padding => [3, 6, 4, 5], # top 3, right 6, bottom 4, left 5
+
+B<Optional>. Specifies cell padding (in points). Takes an arrayref of 1 to 4
+numbers, following the same convention as
+the L<CSS property|http://www.w3.org/wiki/CSS/Properties/padding>.
+
 =head3 C<row_height>
 
     row_height => 24,
@@ -528,9 +540,11 @@ B<Optional>. Specifies the height of a row, in points. Defaults to
     str_width_mult => 1.1,
 
 B<Optional>. Cell widths will be automatically computed based on the
-width of the strings they contain. On some fonts, the detection is a bit
-imperfect. For those cases, use C<str_width_mult> as a multiplier for the
-detected character width.
+width of the strings they contain. Currently, that computation
+works reliably only for the C<Times>, C<Courier>, and C<Helvetica>
+L</font> families. All other fonts will be computed as if they were sized
+same as C<Helvetica>. For those cases, use C<str_width_mult> as a multiplier
+for the detected character width.
 
 =head2 C<text>
 
@@ -548,7 +562,9 @@ C<$rotation> is the rotation of the text in degrees.
 Subsequent calls to C<text> can omit C<$x> and C<$y> values with
 these effects: omit both to continue rendering where previous C<text>
 finished; omit just C<$y>, to render on the next line from previous call
-to C<text>.
+to C<text>. B<Note:> determination of the C<$x> reliably works only for the
+C<Times>, C<Courier>, and C<Helvetica> L</font> families. All other fonts
+will be computed as if they were sized same as C<Helvetica>.
 
 =head1 DEFAULT FONTS
 

@@ -3,14 +3,14 @@ package Mojo::PDF::Primitive::Table;
 # VERSION
 
 use List::AllUtils qw/sum/;
-use Types::Standard qw/ArrayRef  Tuple  InstanceOf  StrictNum  Str  CodeRef/;
+use Types::Standard qw/
+    ArrayRef  Tuple  InstanceOf  StrictNum  Str  CodeRef  Optional
+/;
 use Types::Common::Numeric qw/PositiveInt  PositiveOrZeroNum  PositiveNum/;
 use Moo 2.000002;
 use namespace::clean;
 
 $Carp::Internal{ (__PACKAGE__) }++;
-my $CELL_PADDING_X = 12;
-my $CELL_PADDING_Y = 6;
 
 ##### Required
 has at => (
@@ -42,6 +42,18 @@ has max_height => (
     isa     => PositiveOrZeroNum,
 );
 has min_width      => ( is => 'ro',   default  => 0,  isa =>PositiveOrZeroNum);
+has padding        => (
+    is      => 'ro',
+    default => sub { [3, 6] },
+    isa     => Tuple[PositiveOrZeroNum,Optional[PositiveOrZeroNum],Optional[PositiveOrZeroNum],Optional[PositiveOrZeroNum]],
+    coerce => sub {
+        my $v = shift;
+        return @$v == 4 ? [@$v]
+            : @$v == 3 ? [ $v->[0], $v->[1], $v->[2], $v->[1] ]
+            : @$v == 2 ? [ $v->[0], $v->[1], $v->[0], $v->[1] ]
+            : [ (@$v) x 4 ];
+    },
+);
 has row_height     => ( is => 'ro',   default  => 12, isa => PositiveNum,    );
 has str_width_mult => ( is => 'ro',   default  => 1,  isa => StrictNum       );
 
@@ -71,13 +83,15 @@ sub _build__col_widths {
     my $w_mult = $self->str_width_mult;
     for my $row ( @$data ) {
         for ( 0 .. $col_num - 1 ) {
-            next unless length $row->[$_];
-            my $w = $w_mult * $self->pdf->_str_width( $row->[$_] );
+            next unless my $l = length $row->[$_];
+            my $w = ( $l > 10 ? $w_mult : 1 )
+                * $self->pdf->_str_width( $row->[$_] );
             $col_widths[$_] = $w if $w > $col_widths[$_];
         }
     }
 
-    $_ += 2*$CELL_PADDING_X for @col_widths; # cell padding
+    my ( undef, $pad_xr, undef, $pad_xl ) = @{ $self->padding };
+    $_ += $pad_xr + $pad_xl for @col_widths; # cell padding
 
     # Stretch largest column to fill table to its min_width
     if ( $self->min_width > sum @col_widths ) {
@@ -128,12 +142,14 @@ sub _draw_cell {
     my $pdf = $self->pdf;
     return 1 unless length $text;
 
+    my ( $pad_yt, undef, $pad_yb, $pad_xl ) = @{ $self->padding };
+
     my $x1 = $self->_x;
     $x1   += $self->_col_widths->[$_] for 0 .. $c_num - 2;
-    my $y1 = $self->_y + ($self->row_height + 2*$CELL_PADDING_Y)*($r_num-1);
+    my $y1 = $self->_y + ($self->row_height + $pad_yt + $pad_yb)*($r_num-1);
 
     my $x2 = $x1 + $self->_col_widths->[$c_num-1];
-    my $y2 = $y1 + $self->row_height + 2*$CELL_PADDING_Y;
+    my $y2 = $y1 + $self->row_height + $pad_yt + $pad_yb;
 
     return if $y2 > $self->max_height;
 
@@ -152,7 +168,7 @@ sub _draw_cell {
         $pdf->text(
             $text,
             $x1 + ( .5*$self->_col_widths->[$c_num-1] ),
-            $y1 + $self->row_height + $CELL_PADDING_Y - 2,
+            $y1 + $self->row_height + $pad_yt - 2,
             'center',
         );
         $pdf->font( $saved_font );
@@ -162,8 +178,8 @@ sub _draw_cell {
 
     $pdf->text(
         $text,
-        $x1 + .5*$CELL_PADDING_X,
-        $y1 + $self->row_height + $CELL_PADDING_Y - 2
+        $x1 + $pad_xl,
+        $y1 + $self->row_height + $pad_yt - 2
     );
 }
 
