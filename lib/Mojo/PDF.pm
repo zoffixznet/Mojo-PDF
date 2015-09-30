@@ -593,6 +593,9 @@ positive infinity (C<inf>) too:
     $p->text('Lorem ipsum dolor sit amet, ', 20 );
     $p->text('consectetur adipiscing elit!');
 
+    use Text::Fold qw/fold_text/;
+    $p->text( fold_text $giant_amount_of_text, 42 ); # new lines work!
+
 Render text with the currently active L</font>, L</size>, and L</color>.
 C<$alignment> specifies how to align the string horizontally on the C<$x>
 point; valid values are C<left> (default), C<center>, and C<right>.
