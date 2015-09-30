@@ -305,7 +305,7 @@ __END__
 
 =encoding utf8
 
-=for stopwords Znet Zoffix Mojotastic PDFs RGB TTF
+=for stopwords Znet Zoffix Mojotastic PDFs RGB TTF Unicode
 
 =head1 NAME
 
@@ -410,7 +410,7 @@ to black.
 
 Sets active font family. Takes the name of either one of the L</DEFAULT FONTS>
 or one of the custom fonts included with L</add_fonts>. Note that
-L</DEFAULT FONTS> do not support unicode.
+L</DEFAULT FONTS> do not support Unicode.
 
 =head2 C<mixin>
 
@@ -608,7 +608,7 @@ will be computed as if they were sized same as C<Helvetica>.
 
 =head1 DEFAULT FONTS
 
-These fonts are available by default. Note that they don't support unicode.
+These fonts are available by default. Note that they don't support Unicode.
 
     Times-Roman
     Times-Bold
