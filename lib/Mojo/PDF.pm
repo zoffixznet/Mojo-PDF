@@ -321,7 +321,7 @@ Mojo::PDF - Generate PDFs with the goodness of Mojo!
     # Let's get fancy pants:
     Mojo::PDF->new('myawesome.pdf')
 
-        ->mixin('_template.pdf')   # add a pre-made PDF page from a template
+        ->mixin('template.pdf')   # add a pre-made PDF page from a template
 
         # Render text with standard fonts
         ->font('Times-Bold')->size(24)->color(0, 0, .7)
