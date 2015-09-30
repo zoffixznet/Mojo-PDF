@@ -2,12 +2,13 @@ package Mojo::PDF::Primitive::Table;
 
 # VERSION
 
-use List::AllUtils qw/sum/;
+use List::AllUtils qw/sum uniq/;
 use Types::Standard qw/
-    ArrayRef  Tuple  InstanceOf  StrictNum  Str  CodeRef  Optional
+    HashRef ArrayRef  Tuple  InstanceOf  StrictNum  Str  CodeRef  Optional
 /;
 use Types::Common::Numeric qw/PositiveInt  PositiveOrZeroNum  PositiveNum/;
 use Moo 2.000002;
+use Tie::RangeHash 1.05;
 use namespace::clean;
 
 $Carp::Internal{ (__PACKAGE__) }++;
@@ -55,9 +56,28 @@ has padding        => (
     },
 );
 has row_height     => ( is => 'ro',   default  => 12, isa => PositiveNum,    );
-has str_width_mult => ( is => 'ro',   default  => 1,  isa => StrictNum       );
+has str_width_mult => (
+    is => 'ro',
+    default  => 1,
+    isa => HashRef,
+    coerce => sub {
+        my ( $v ) = @_;
 
+        tie my %widths, 'Tie::RangeHash';
+        unless ( ref $v ) { $widths{'0,'} = $v; return \%widths; }
+
+        my $prev = -1;
+        for ( uniq map sprintf('%.f', $_), sort { $a <=> $b } keys %$v ) {
+            $widths{"$prev.1,$_"} = $v->{$_};
+            $prev = $_;
+        }
+
+        return \%widths;
+    },
+);
 ##### Internal
+has _extra_row_h   => ( is => 'rw',   default  => 0,                         );
+has _row_lines     => ( is => 'rw',   default  => 0,                         );
 has _border_color  => ( is => 'lazy', builder  => sub { shift->border->[1]  });
 has _border_width  => ( is => 'lazy', builder  => sub { shift->border->[0]  });
 has _col_widths    => ( is => 'lazy',                                        );
@@ -84,8 +104,12 @@ sub _build__col_widths {
     for my $row ( @$data ) {
         for ( 0 .. $col_num - 1 ) {
             next unless my $l = length $row->[$_];
-            my $w = ( $l > 10 ? $w_mult : 1 )
-                * $self->pdf->_str_width( $row->[$_] );
+            my $w = 0;
+            for ( split /\n/, $row->[$_] ) {
+                my $mult = $w_mult->{ +length } // 1;
+                my $new_w = $mult * $self->pdf->_str_width( $_ );
+                $w = $new_w if $new_w > $w;
+            }
             $col_widths[$_] = $w if $w > $col_widths[$_];
         }
     }
@@ -129,10 +153,21 @@ sub draw {
 sub _draw_row {
     my ( $self, $r_num, $cells ) = @_;
 
+    my $row_lines = 1;
+    for ( @$cells ) {
+        my $cell_lines = 1 + tr/\n//;
+        $row_lines = $cell_lines if $row_lines < $cell_lines;
+    }
+    $self->_row_lines( $row_lines );
+
     for my $cell ( 1 .. @$cells ) {
         $self->_draw_cell( $r_num, $cell, $cells->[$cell-1] )
             or return;
     }
+
+    $self->_extra_row_h(
+        $self->_extra_row_h + $self->row_height * ($row_lines-1)
+    );
 
     return 1;
 }
@@ -146,10 +181,12 @@ sub _draw_cell {
 
     my $x1 = $self->_x;
     $x1   += $self->_col_widths->[$_] for 0 .. $c_num - 2;
-    my $y1 = $self->_y + ($self->row_height + $pad_yt + $pad_yb)*($r_num-1);
+    my $y1 = $self->_y + ($self->row_height + $pad_yt + $pad_yb)*($r_num-1)
+        + $self->_extra_row_h;
 
     my $x2 = $x1 + $self->_col_widths->[$c_num-1];
-    my $y2 = $y1 + $self->row_height + $pad_yt + $pad_yb;
+    my $y2 = $y1 + $pad_yt + $pad_yb
+        + ( $self->row_height * $self->_row_lines );
 
     return if $y2 > $self->max_height;
 
@@ -181,6 +218,8 @@ sub _draw_cell {
         $x1 + $pad_xl,
         $y1 + $self->row_height + $pad_yt - 2
     );
+
+    return 1;
 }
 
 1;

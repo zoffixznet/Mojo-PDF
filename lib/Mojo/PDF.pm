@@ -218,6 +218,26 @@ sub text {
     $y //= $self->_y + ( @_ > 1 ? $self->_line_height : 0 );
     $self->_y( $y );
 
+    my @lines = split /\n/, $string;
+    for ( 0 .. $#lines ) {
+        $self->_text(
+            $lines[$_],
+            $x,
+            $self->_y + $self->_line_height * $_,
+            $align,
+            $rotation,
+        );
+    }
+
+    $self;
+}
+
+sub _text {
+    my $self = shift;
+    my ( $string, $x, $y, $align, $rotation ) = @_;
+    $self->_x( $x );
+    $self->_y( $y );
+
     my @text = ( { text => $string } );
     for my $r ( values %{$self->_rules} ) {
         my @new_text;
@@ -255,13 +275,19 @@ sub text {
             if ( $bit->{color} ) { $self->color( $orig_color ); }
             next;
         }
-        $self->_text( $bit->{text}, $self->_x, $self->_y, $align, $rotation );
+        $self->_render_text_bit(
+            $bit->{text},
+            $self->_x,
+            $self->_y,
+            $align,
+            $rotation,
+        );
     }
 
     $self;
 }
 
-sub _text {
+sub _render_text_bit {
     my $self = shift;
     my ( $string, $x, $y, $align, $rotation ) = @_;
     $self->_x( (prText($x, __inv_y($y), $string, $align, $rotation))[1] );
@@ -383,7 +409,8 @@ to black.
     $pdf->font('galaxie');
 
 Sets active font family. Takes the name of either one of the L</DEFAULT FONTS>
-or one of the custom fonts included with L</add_fonts>
+or one of the custom fonts included with L</add_fonts>. Note that
+L</DEFAULT FONTS> do not support unicode.
 
 =head2 C<mixin>
 
@@ -471,7 +498,8 @@ An arrayref with X and Y point values of the table's top, left corner.
 
 An arrayref of rows, each of which is an arrayref of strings representing
 table cell values. Setting L</header> will render first row as a table header.
-Cells that are C<undef>/empty string will not be rendered.
+Cells that are C<undef>/empty string will not be rendered. Text
+in cells is rendered using L</text>.
 
 =head3 C<border>
 
@@ -538,6 +566,7 @@ B<Optional>. Specifies the height of a row, in points. Defaults to
 =head3 C<str_width_mult>
 
     str_width_mult => 1.1,
+    str_width_mult => { 10 => 1.1, 20 => 1.3, inf => 1.5 },
 
 B<Optional>. Cell widths will be automatically computed based on the
 width of the strings they contain. Currently, that computation
@@ -545,6 +574,16 @@ works reliably only for the C<Times>, C<Courier>, and C<Helvetica>
 L</font> families. All other fonts will be computed as if they were sized
 same as C<Helvetica>. For those cases, use C<str_width_mult> as a multiplier
 for the detected character width.
+
+You can use a hashref to specify different multipliers for strings of
+different lengths. The values are multipliers and keys specify the
+maximum length this multiplier applies to. You can use
+positive infinity (C<inf>) too:
+
+    str_width_mult => { 10 => 1.1, 20 => 1.3, inf => 1.5 },
+    # mult is 1.1 for strings 0-10 chars
+    # mult is 1.3 for strings 11-20 chars
+    # mult is 1.5 for strings 20+ chars
 
 =head2 C<text>
 
@@ -557,7 +596,8 @@ for the detected character width.
 Render text with the currently active L</font>, L</size>, and L</color>.
 C<$alignment> specifies how to align the string horizontally on the C<$x>
 point; valid values are C<left> (default), C<center>, and C<right>.
-C<$rotation> is the rotation of the text in degrees.
+C<$rotation> is the rotation of the text in degrees. You can use new
+line characters (C<\n>) to render text on multiple lines.
 
 Subsequent calls to C<text> can omit C<$x> and C<$y> values with
 these effects: omit both to continue rendering where previous C<text>
@@ -568,7 +608,7 @@ will be computed as if they were sized same as C<Helvetica>.
 
 =head1 DEFAULT FONTS
 
-These fonts are available by default:
+These fonts are available by default. Note that they don't support unicode.
 
     Times-Roman
     Times-Bold
