@@ -7,7 +7,7 @@ use Mojo::Base -base;
 use Carp qw/croak/;
 $Carp::Internal{ (__PACKAGE__) }++;
 use PDF::Reuse 0.36;
-use Number::RGB 1.4;
+use Number::RGB 1.41;
 use List::AllUtils qw/sum/;
 use Mojo::PDF::Primitive::Table;
 use namespace::clean;
