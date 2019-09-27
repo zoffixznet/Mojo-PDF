@@ -14,6 +14,7 @@ use namespace::clean;
 
 $SIG{'__WARN__'} = sub { warn @_ unless caller eq 'PDF::Reuse'; };
 
+has page_size => sub { [612, 792] }; # default US-Letter pages
 has [qw/_line_height  _x  _y /] => 0;
 has _cur_color => sub { [0, 0, 0] };
 has _cur_font  => 'TR';
@@ -21,8 +22,6 @@ has _cur_size  => 12;
 has _fonts => sub { +{} };
 has _rules => sub { +{} };
 
-my $PAGE_SIZE_Y = 792;
-my $PAGE_SIZE_X = 612;
 my %STD_FONTS = (
     'Times-Roman'           => 'Times-Roman',
     'Times-Bold'            => 'Times-Bold',
@@ -62,12 +61,15 @@ sub __hex2rgb {
     return map $_/255, @{ $c->rgb };
 }
 
-sub __inv_y { $_ = $PAGE_SIZE_Y - $_ for @_; @_ }
+sub __inv_y {
+  my $self = shift;
+  $_ = $self->page_size->[1] - $_ for @_; @_
+}
 
 sub _line {
     my $self = shift;
     my ( $x1, $y1, $x2, $y2 ) = @_;
-    __inv_y($y1, $y2);
+    $self->__inv_y($y1, $y2);
     prAdd "$x1 $y1 m $x2 $y2 l S";
 
     $self;
@@ -148,12 +150,11 @@ sub mixin {
 }
 
 sub new {
-    my ( $class, $filename ) = @_;
-    my $self = bless {}, $class;
+    my ( $class, $filename ) = ( shift, shift );
+    my $self = $class->SUPER::new( @_ );
 
     prFile $filename;
-    # use US-Letter pages
-    prMbox ( 0, 0, $PAGE_SIZE_X, $PAGE_SIZE_Y );
+    prMbox ( 0, 0, $self->page_size->[0], $self->page_size->[1] );
     $self->size;
 
     $self;
@@ -290,7 +291,7 @@ sub _text {
 sub _render_text_bit {
     my $self = shift;
     my ( $string, $x, $y, $align, $rotation ) = @_;
-    $self->_x( (prText($x, __inv_y($y), $string, $align, $rotation))[1] );
+    $self->_x( (prText($x, $self->__inv_y($y), $string, $align, $rotation))[1] );
 
     $self;
 }
@@ -319,7 +320,7 @@ Mojo::PDF - Generate PDFs with the goodness of Mojo!
     Mojo::PDF->new('mypdf.pdf')->text('Viva la Mojo!', 306, 396)->end;
 
     # Let's get fancy pants:
-    Mojo::PDF->new('myawesome.pdf')
+    Mojo::PDF->new('myawesome.pdf', page_size => [612, 792])
 
         ->mixin('template.pdf')   # add a pre-made PDF page from a template
 
@@ -370,9 +371,15 @@ Unless otherwise indicated, all methods return their invocant.
 =head2 C<new>
 
     my $pdf = Mojo::PDF->new('myawesome.pdf');
+    my $pdf = Mojo::PDF->new('myawesome.pdf', page_size => [$x, $y]);
 
 Creates a new C<Mojo::PDF> object. Takes one mandatory argument: the filename
-of the PDF you want to generate.
+of the PDF you want to generate, followed by optional key/value attributes.
+
+=head3 C<page_size>
+
+Array reference containing the XxY page size in pixels. Defaults to [612, 792]
+(US-Letter).
 
 =head2 C<end>
 
