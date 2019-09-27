@@ -693,6 +693,10 @@ to C<bug-Mojo-PDF at rt.cpan.org>
 
 =for pod_spiffy end author section
 
+=head1 CONTRIBUTORS
+
+L<Stefan Adams|https://github.com/s1037989>
+
 =head1 LICENSE
 
 You can use and distribute this module under the same terms as Perl itself.
