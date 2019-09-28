@@ -167,6 +167,12 @@ sub page {
     $self;
 }
 
+sub raw {
+    my $self = shift;
+    prAdd shift;
+    $self;
+}
+
 sub rule {
     my ( $self, %new ) = @_;
     my $rules = $self->_rules;
@@ -436,6 +442,15 @@ which defaults to the first page.
     $pdf->page;
 
 Add a new blank page to your document and sets it as the currently active page.
+
+=head2 C<raw>
+
+    $pdf->raw("0 0 m\n10 10 l\nS\nh\n");
+
+Use L<prAdd|PDF::Reuse/"prAdd"> to "add whatever you want to the current content stream".
+
+See, for example, section 4.4.1 on page 196 of the
+L<Adobe Acrobat SDK PDF Reference Manual|https://web.archive.org/web/20060212001631/http://partners.adobe.com/public/developer/en/acrobat/sdk/pdf/pdf_creation_apis_and_specs/PDFReference.pdf>.
 
 =head2 C<rule>
 
