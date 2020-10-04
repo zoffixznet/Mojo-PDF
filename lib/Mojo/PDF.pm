@@ -382,6 +382,18 @@ Unless otherwise indicated, all methods return their invocant.
 Creates a new C<Mojo::PDF> object. Takes one mandatory argument: the filename
 of the PDF you want to generate, followed by optional key/value attributes.
 
+If filename is not specified or C<undef>, the PDF will be output to C<STDOUT>.
+An L<IO::String> object can be specified to output the PDF into a variable:
+
+    # IO::String
+    my $pdf = Mojo::PDF->new(IO::String->new(my $pdf_bytes));
+    $pdf->text('Viva la Mojo!', 306, 396)->end;
+
+    # Then use the bytes somewhere:
+    open my $fh, '>', 'the.pdf' or die $!;
+    print $fh $pdf_bytes;
+    close $fh;
+
 =head3 C<page_size>
 
 Array reference containing the XxY page size in pixels. Defaults to [612, 792]
