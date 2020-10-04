@@ -450,6 +450,11 @@ mandatory argument, the filename of the PDF to include. An optional second
 argument specifies the page number to include (starting from 1),
 which defaults to the first page.
 
+B<Note:> If you get an error along the lines of I<can't be used as a form. See the documentation under prForm how to concatenate streams>, it likely means the PDF is not compatible with this feature. The details are described in
+L<PDF::Reuse::prForm documentation|https://metacpan.org/pod/release/CNIGHS/PDF-Reuse-0.39/lib/PDF/Reuse.pm#prForm-use-a-page-from-an-old-document-as-a-form/background>. I had to convert my InDesign-generated PDFs with
+L<Win2PDF "printer"|https://www.win2pdf.com/> to get them to work with this
+method.
+
 =head2 C<page>
 
     $pdf->page;
