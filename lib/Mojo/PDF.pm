@@ -362,14 +362,6 @@ Mojo::PDF - Generate PDFs with the goodness of Mojo!
 
 Mojotastic, no-nonsense PDF generation.
 
-=head1 WARNING
-
-=for pod_spiffy start warning section
-
-This module is currently experimental. Things will change.
-
-=for pod_spiffy end warning section
-
 =head1 METHODS
 
 Unless otherwise indicated, all methods return their invocant.
