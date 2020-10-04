@@ -362,6 +362,15 @@ Mojo::PDF - Generate PDFs with the goodness of Mojo!
 
 Mojotastic, no-nonsense PDF generation.
 
+=head1 CAVEATS
+
+B<Note:> due to the way L<PDF::Reuse>, which is used under the hood, is
+implemented, it's not possible to simultaneously handle multiple
+L<Mojo::PDF> objects, as all of the internal L<PDF::Reuse> output
+variables are shared. Thus, L<Mojo::PDF> merely provides a more convenient
+interface for L<PDF::Reuse>, rather than being a truly object-oriented way
+to produce PDFs.
+
 =head1 METHODS
 
 Unless otherwise indicated, all methods return their invocant.
