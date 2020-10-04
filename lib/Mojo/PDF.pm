@@ -8,6 +8,7 @@ use Carp qw/croak/;
 $Carp::Internal{ (__PACKAGE__) }++;
 use PDF::Reuse 0.36;
 use Number::RGB 1.41;
+use Image::Size;
 use List::AllUtils qw/sum/;
 use Mojo::PDF::Primitive::Table;
 use namespace::clean;
@@ -163,6 +164,29 @@ sub new {
 sub page {
     my $self = shift;
     prPage;
+
+    $self;
+}
+
+sub pic {
+    my ($self, $pic, %args) = @_;
+    my ($width, $height) = Image::Size::imgsize($pic);
+    my $int_name = prJpeg $pic, $width, $height, 0;
+
+    if ($args{scale}) {
+        $width  *= $args{scale};
+        $height *= $args{scale};
+    }
+    # my $x = $self->page_size->[0] - ($args{x}||0) - $width;
+    my ($x, $y) = map $_||0, @args{qw/x y/};
+    $self->__inv_y($y);
+    $y -= $height;
+
+    my $str = "q\n";
+    $str   .= "$width 0 0 $height $x $y cm\n";
+    $str   .= "/$int_name Do\n";
+    $str   .= "Q\n";
+    prAdd $str;
 
     $self;
 }
@@ -461,6 +485,19 @@ method.
 
 Add a new blank page to your document and sets it as the currently active page.
 
+=head2 C<pic>
+
+    $pdf->pic(
+        'cat.jpg',
+        x     => 42,   # place at X points from the left of page
+        y     => 100,  # place at Y points from the top  of page
+        scale => .5    # scale image by this factor
+    );
+
+Add a JPEG image to the active page (other formats currently unsupported). Takes the filename as the first argument,
+the rest are key-value pairs: the C<x> for X position, C<y> for Y position,
+and C<scale> as the scale factor for the image.
+
 =head2 C<raw>
 
     $pdf->raw("0 0 m\n10 10 l\nS\nh\n");
@@ -514,7 +551,7 @@ Specifies active font size in points. Defaults to C<12> points.
             $conf->{at}[1] = 50;
             $pdf->page;
             $data;
-        },
+        } ],
         min_width      => 571.2,
         padding        => [3, 6],
         row_height     => 24,
