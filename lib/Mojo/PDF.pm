@@ -170,14 +170,22 @@ sub page {
 
 sub pic {
     my ($self, $pic, %args) = @_;
-    my ($width, $height) = Image::Size::imgsize($pic);
-    my $int_name = prJpeg $pic, $width, $height, 0;
+    my ($width, $height, $int_name);
+    if (ref $pic eq 'SCALAR') { # we have a data string rather than file
+        open my $fh, '<', $pic or die "Failed to read image bytes: $!";
+        ($width, $height) = Image::Size::imgsize($fh);
+        $int_name = prJpeg $$pic, $width, $height, 1;
+    }
+    else {
+        ($width, $height) = Image::Size::imgsize($pic);
+        $int_name = prJpeg $pic, $width, $height, 0;
+    }
 
     if ($args{scale}) {
         $width  *= $args{scale};
         $height *= $args{scale};
     }
-    # my $x = $self->page_size->[0] - ($args{x}||0) - $width;
+
     my ($x, $y) = map $_||0, @args{qw/x y/};
     $self->__inv_y($y);
     $y -= $height;
@@ -488,15 +496,15 @@ Add a new blank page to your document and sets it as the currently active page.
 =head2 C<pic>
 
     $pdf->pic(
-        'cat.jpg',
+        'cat.jpg',     # use scalar ref (\$data) to provide raw bytes instead
         x     => 42,   # place at X points from the left of page
         y     => 100,  # place at Y points from the top  of page
         scale => .5    # scale image by this factor
     );
 
-Add a JPEG image to the active page (other formats currently unsupported). Takes the filename as the first argument,
-the rest are key-value pairs: the C<x> for X position, C<y> for Y position,
-and C<scale> as the scale factor for the image.
+Add a JPEG image to the active page (other formats currently unsupported). Takes the filename (string) or raw image bytes (in a scalar ref) as the first
+argument, the rest are key-value pairs: the C<x> for X position, C<y> for Y
+position, and C<scale> as the scale factor for the image.
 
 =head2 C<raw>
 
